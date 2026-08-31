@@ -1,15 +1,12 @@
 plugins {
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.android.library)
     alias(libs.plugins.aliucord.plugin)
-    alias(libs.plugins.kotlin.android)
 }
-
-version = "1.0.0"
-description = "Local profile preview"
 
 android {
     namespace = "com.github.yournamehere"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 21
@@ -23,17 +20,18 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
-}
-
-aliucord {
-    author("wibrowelias-art", 0L)
-    github("https://github.com/wibrowelias-art/Customprofile")
 }
 
 dependencies {
     compileOnly(libs.discord)
     compileOnly(libs.aliucord)
     compileOnly(libs.kotlin.stdlib)
+}
+
+aliucord {
+    author("wibrowelias-art", 0L)
+    github("https://github.com/wibrowelias-art/Customprofile")
+    deploy.set(true)
 }
