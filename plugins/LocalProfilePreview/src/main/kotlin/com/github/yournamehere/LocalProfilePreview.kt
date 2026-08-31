@@ -1,4 +1,4 @@
-apackage com.github.yournamehere
+package com.github.yournamehere
 
 import android.graphics.Color
 import android.view.View
