@@ -28,3 +28,4 @@ aliucord {
     author("wibrowelias-art", 0L)
     github("https://github.com/wibrowelias-art/Customprofile")
 }
+// trigger build
