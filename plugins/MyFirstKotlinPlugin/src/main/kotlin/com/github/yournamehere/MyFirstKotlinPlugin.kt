@@ -1,131 +1,340 @@
 package com.github.yournamehere
 
-import android.content.Context
-import com.aliucord.Utils
-import com.aliucord.annotations.AliucordPlugin
-import com.aliucord.api.CommandsAPI
-import com.aliucord.entities.MessageEmbedBuilder
-import com.aliucord.entities.Plugin
-import com.aliucord.patcher.*
-import com.aliucord.wrappers.embeds.MessageEmbedWrapper.Companion.title
-import com.discord.api.commands.ApplicationCommandType
-import com.discord.models.user.CoreUser
-import com.discord.stores.StoreUserTyping
-import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage
-import com.discord.widgets.chat.list.entries.ChatListEntry
-import com.discord.widgets.chat.list.entries.MessageEntry
+import android.graphics.Color
+import android.view.View
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 
-// Aliucord Plugin annotation. Must be present on the main class of your plugin
-// Plugin class. Must extend Plugin and override start and stop
-// Learn more: https://github.com/Aliucord/documentation/blob/main/plugin-dev/1_introduction.md#basic-plugin-structure
-@AliucordPlugin(
-    requiresRestart = false, // Whether your plugin requires a restart after being installed/updated
-)
-@Suppress("unused")
-class MyFirstKotlinPlugin : Plugin() {
-    override fun start(context: Context) {
-        // Register a command with the name hello and description "My first command!" and no arguments.
-        // Learn more: https://github.com/Aliucord/documentation/blob/main/plugin-dev/2_commands.md
-        commands.registerCommand("hello", "My first command!") {
-            // Just return a command result with hello world as the content
-            CommandsAPI.CommandResult(
-                "Hello World!",
-                null, // List of embeds
-                false, // Whether to send visible for everyone
+import com.aliucord.annotations.AliucordPlugin
+import com.aliucord.api.SettingsAPI
+import com.aliucord.fragments.SettingsPage
+import com.aliucord.plugins.Plugin
+import com.aliucord.settings.SettingsTab
+
+/**
+ * LocalProfilePreview
+ *
+ * Everything stored here is local to this Aliucord installation.
+ *
+ * This plugin does NOT:
+ *  - edit Discord account data
+ *  - send profile changes to Discord
+ *  - modify REST/gateway requests
+ *  - grant Nitro
+ *  - modify Discord entitlements
+ *
+ * It only supplies values for local UI rendering.
+ */
+@AliucordPlugin
+class LocalProfilePreview : Plugin() {
+
+    companion object {
+        const val KEY_ENABLED = "enabled"
+        const val KEY_USERNAME = "username"
+        const val KEY_CREATION_DATE = "creation_date"
+
+        const val KEY_BADGE_STAFF = "badge_staff"
+        const val KEY_BADGE_PARTNER = "badge_partner"
+        const val KEY_BADGE_HYPESQUAD = "badge_hypesquad"
+        const val KEY_BADGE_BUG_HUNTER = "badge_bug_hunter"
+        const val KEY_BADGE_DEVELOPER = "badge_developer"
+        const val KEY_BADGE_MODERATOR = "badge_moderator"
+
+        lateinit var instance: LocalProfilePreview
+            private set
+
+        fun settings(): SettingsAPI = instance.settings
+
+        fun enabled(): Boolean =
+            settings().getBool(KEY_ENABLED, false)
+
+        fun username(): String =
+            settings().getString(KEY_USERNAME, "")
+
+        fun creationDate(): String =
+            settings().getString(KEY_CREATION_DATE, "")
+
+        fun badgeStaff(): Boolean =
+            settings().getBool(KEY_BADGE_STAFF, false)
+
+        fun badgePartner(): Boolean =
+            settings().getBool(KEY_BADGE_PARTNER, false)
+
+        fun badgeHypeSquad(): Boolean =
+            settings().getBool(KEY_BADGE_HYPESQUAD, false)
+
+        fun badgeBugHunter(): Boolean =
+            settings().getBool(KEY_BADGE_BUG_HUNTER, false)
+
+        fun badgeDeveloper(): Boolean =
+            settings().getBool(KEY_BADGE_DEVELOPER, false)
+
+        fun badgeModerator(): Boolean =
+            settings().getBool(KEY_BADGE_MODERATOR, false)
+    }
+
+    init {
+        instance = this
+
+        settingsTab =
+            SettingsTab(ProfileSettingsPage::class.java)
+                .withArgs(settings)
+    }
+
+    override fun start(context: android.content.Context) {
+        // Intentionally no network/account hooks.
+    }
+
+    override fun stop(context: android.content.Context) {
+        // No hooks/listeners to remove.
+    }
+}
+
+
+/**
+ * Aliucord settings page.
+ */
+class ProfileSettingsPage(
+    private val pluginSettings: SettingsAPI
+) : SettingsPage() {
+
+    override fun onViewBound(view: View) {
+        super.onViewBound(view)
+
+        val context = view.context
+
+        val root = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 32)
+        }
+
+        fun title(text: String) {
+            root.addView(
+                TextView(context).apply {
+                    this.text = text
+                    textSize = 20f
+                    setTextColor(Color.WHITE)
+
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+
+                    params.topMargin = 20
+                    params.bottomMargin = 8
+
+                    layoutParams = params
+                }
             )
         }
 
-        // A bit more advanced command with arguments
-        commands.registerCommand(
-            "hellowitharguments",
-            "Hello World but with arguments!",
-            listOf(
-                Utils.createCommandOption(
-                    ApplicationCommandType.STRING,
-                    "name",
-                    "Person to say hello to",
-                ),
-                Utils.createCommandOption(
-                    ApplicationCommandType.USER,
-                    "user",
-                    "User to say hello to",
-                ),
-            ),
-        ) { ctx ->
-            // Check if a user argument was passed
-            val username = if (ctx.containsArg("user")) {
-                ctx.getRequiredUser("user").username
-            } else {
-                // Returns either the argument value if present, or the defaultValue ("World" in this case)
-                ctx.getStringOrDefault("name", "World")
-            }
+        fun description(text: String) {
+            root.addView(
+                TextView(context).apply {
+                    this.text = text
+                    textSize = 14f
+                    alpha = 0.75f
 
-            // Return the final result that will be displayed in chat as a response to the command
-            CommandsAPI.CommandResult("Hello $username!")
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+
+                    params.bottomMargin = 12
+
+                    layoutParams = params
+                }
+            )
         }
 
-        // Patch that adds an embed with message statistics to each message
-        // Patched method is WidgetChatListAdapterItemMessage.onConfigure(int type, ChatListEntry entry)
-        patcher.after<WidgetChatListAdapterItemMessage>(
-            "onConfigure", // Method name
-            // Refer to https://kotlinlang.org/docs/reflection.html#class-references
-            // and https://docs.oracle.com/javase/tutorial/reflect/class/classNew.html
-            Int::class.java, // int type
-            ChatListEntry::class.java, // ChatListEntry entry
-        ) { param ->
-            // see https://api.xposed.info/reference/de/robv/android/xposed/XC_MethodHook.MethodHookParam.html
-            // Obtain the second argument passed to the method, so the ChatListEntry
-            // Because this is a Message item, it will always be a MessageEntry, so cast it to that
-            val entry = param.args[1] as MessageEntry
-            val message = entry.message
-
-            // You need to be careful when messing with messages, because they may be loading
-            // (user sent a message, and it is currently sending)
-            if (message.isLoading) return@after
-
-            // Now add an embed with the statistics
-
-            // This method may be called multiple times per message, e.g. if it is edited,
-            // so first remove existing embeds
-            message.embeds.removeAll {
-                // MessageEmbed.getTitle() is actually obfuscated, but Aliucord provides extensions for commonly used
-                // obfuscated Discord classes, so just import the MessageEmbed.title extension and boom goodbye obfuscation!
-                it.title == "Message Statistics"
-            }
-
-            // Creating embeds is a pain, so Aliucord provides a convenient builder
-            MessageEmbedBuilder().run {
-                setTitle("Message Statistics")
-                addField("Length", "${message.content?.length ?: 0}", false)
-                addField("ID", message.id.toString(), false)
-
-                message.embeds.add(build())
-            }
-        }
-
-        // Patch that renames Juby to JoobJoob
-        patcher.before<CoreUser>("getUsername") { param ->
-            // see https://api.xposed.info/reference/de/robv/android/xposed/XC_MethodHook.MethodHookParam.html
-            // in before, after and instead patches, `this` refers to the instance of the class
-            // the patched method is on, so the CoreUser instance here
-            if (id == 925141667688878090) {
-                // setResult() in before patches skips original method invocation
-                param.result = "JoobJoob"
-            }
-        }
-
-        // Patch that hides your typing status by replacing the method and simply doing nothing
-        patcher.instead<StoreUserTyping>(
-            "setUserTyping",
-            Long::class.java, // java.lang.Long channelId
+        fun editText(
+            hint: String,
+            value: String,
+            onChanged: (String) -> Unit
         ) {
-            // Return null
-            null
-        }
-    }
+            root.addView(
+                EditText(context).apply {
+                    this.hint = hint
+                    setText(value)
+                    setSingleLine(true)
 
-    override fun stop(context: Context) {
-        // Remove all patches
-        patcher.unpatchAll()
+                    setOnFocusChangeListener { _, hasFocus ->
+                        if (!hasFocus) {
+                            onChanged(text?.toString().orEmpty())
+                        }
+                    }
+
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+
+                    params.bottomMargin = 8
+
+                    layoutParams = params
+                }
+            )
+        }
+
+        fun checkbox(
+            text: String,
+            checked: Boolean,
+            onChanged: (Boolean) -> Unit
+        ) {
+            root.addView(
+                CheckBox(context).apply {
+                    this.text = text
+                    this.isChecked = checked
+
+                    setOnCheckedChangeListener { _, enabled ->
+                        onChanged(enabled)
+                    }
+
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+            )
+        }
+
+        title("Local Profile Preview")
+
+        description(
+            "These values are local visual overrides. " +
+                "They are not uploaded to Discord and do not change your account."
+        )
+
+        checkbox(
+            "Enable local profile preview",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_ENABLED,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_ENABLED,
+                it
+            )
+        }
+
+        title("Profile")
+
+        editText(
+            "Custom username",
+            pluginSettings.getString(
+                LocalProfilePreview.KEY_USERNAME,
+                ""
+            )
+        ) {
+            pluginSettings.setString(
+                LocalProfilePreview.KEY_USERNAME,
+                it
+            )
+        }
+
+        editText(
+            "Fake account creation date",
+            pluginSettings.getString(
+                LocalProfilePreview.KEY_CREATION_DATE,
+                ""
+            )
+        ) {
+            pluginSettings.setString(
+                LocalProfilePreview.KEY_CREATION_DATE,
+                it
+            )
+        }
+
+        title("Local badges")
+
+        checkbox(
+            "Staff",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_STAFF,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_STAFF,
+                it
+            )
+        }
+
+        checkbox(
+            "Partner",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_PARTNER,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_PARTNER,
+                it
+            )
+        }
+
+        checkbox(
+            "HypeSquad",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_HYPESQUAD,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_HYPESQUAD,
+                it
+            )
+        }
+
+        checkbox(
+            "Bug Hunter",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_BUG_HUNTER,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_BUG_HUNTER,
+                it
+            )
+        }
+
+        checkbox(
+            "Active Developer",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_DEVELOPER,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_DEVELOPER,
+                it
+            )
+        }
+
+        checkbox(
+            "Moderator",
+            pluginSettings.getBool(
+                LocalProfilePreview.KEY_BADGE_MODERATOR,
+                false
+            )
+        ) {
+            pluginSettings.setBool(
+                LocalProfilePreview.KEY_BADGE_MODERATOR,
+                it
+            )
+        }
+
+        title("Preview")
+
+        description(
+            "The renderer should display a small \"LOCAL PREVIEW\" " +
+                "label whenever an override is active."
+        )
+
+        addView(root)
     }
 }
