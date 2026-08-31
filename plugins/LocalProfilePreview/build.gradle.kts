@@ -1,6 +1,6 @@
 plugins {
     id("com.android.library")
-    id("com.aliucord.gradle")
+    id("com.aliucord.gradle") version "1.1.0"
     kotlin("android")
 }
 
