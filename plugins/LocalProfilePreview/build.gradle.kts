@@ -3,6 +3,8 @@ plugins {
     kotlin("android")
 }
 
+version = "1.0.0"
+
 android {
     namespace = "com.github.yournamehere"
     compileSdk = 34
